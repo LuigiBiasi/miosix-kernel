@@ -60,6 +60,7 @@
 #OPT_BOARD := stm32h755zi_nucleo
 #OPT_BOARD := stm32l010rb_nucleo
 #OPT_BOARD := stm32l053r8_nucleo
+OPT_BOARD := stm32l073rz_nucleo
 #OPT_BOARD := stm32l151c8_als_mainboard
 #OPT_BOARD := stm32l152re_nucleo
 #OPT_BOARD := stm32l476rg_nucleo
