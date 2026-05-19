@@ -423,26 +423,23 @@ static const STM32SerialHW ports[maxPorts] = {
 };
 #elif defined(STM32L073xx)
 constexpr int maxPorts = 5;
-
 // Configuring only RX and TX pins for now
 // {GPIOA/B/C (0, 1, 2), PIN NR(In the relative table), AF Column NR}
-static const STM32SerialAltFunc::Span usart1AfSpans[]={{0,9,4}, {0,10,4}, {0,0,0}};
-static const STM32SerialAltFunc::Span usart2AfSpans[]={{0,2,4}, {0,3,4}, {0,0,0}};
-static const STM32SerialAltFunc::Span usart4AfSpans[]={{0,0,6}, {0,1,6}, {0,0,0}};
-static const STM32SerialAltFunc::Span usart5AfSpans[] = {{1,3,6}, {1,4,6}, {0,0,0}};
+static const STM32SerialAltFunc::Span usart1AfSpans[]={{0,9,4},{0,10,4},{0,0,0}};
+static const STM32SerialAltFunc::Span usart2AfSpans[]={{0,2,4},{0,3,4},{0,0,0}};
+static const STM32SerialAltFunc::Span usart4AfSpans[]={{0,0,6},{0,1,6},{0,0,0}};
+static const STM32SerialAltFunc::Span usart5AfSpans[] = {{1,3,6},{1,4,6},{0,0,0}};
 static const STM32SerialAltFunc::Span lpuart1AfSpans[]={{1,10,4},{1,11,4},{1,13,4},{1,14,4},{0,0,0}};
 static const STM32SerialHW ports[maxPorts] = {
     { USART1, USART1_IRQn, {usart1AfSpans}, false, STM32Bus::APB2, RCC_APB2ENR_USART1EN,
       { DMA1_Channel2, DMA1_Channel2_3_IRQn,     STM32SerialDMAHW::Channel2, 3,
         DMA1_Channel5, DMA1_Channel4_5_6_7_IRQn, STM32SerialDMAHW::Channel5, 3 } },
-
     { USART2, USART2_IRQn, {usart2AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART2EN,
       { 0 } }, // No DMA support yet because of merged IRQ channels
-  
-    { USART4, USART4_5_IRQn, {usart4AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART4EN, { 0 }},
-
-    { USART5, USART4_5_IRQn, {usart5AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART5EN, { 0 } },
-
+    { USART4, USART4_5_IRQn, {usart4AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART4EN,
+      { 0 } },
+    { USART5, USART4_5_IRQn, {usart5AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART5EN,
+      { 0 } },
     { LPUART1, LPUART1_IRQn, {lpuart1AfSpans}, true, STM32Bus::APB1, RCC_APB1ENR_LPUART1EN,
       { DMA1_Channel2, DMA1_Channel2_3_IRQn,     STM32SerialDMAHW::Channel2, 5,
         DMA1_Channel6, DMA1_Channel4_5_6_7_IRQn, STM32SerialDMAHW::Channel6, 5 } },
