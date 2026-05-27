@@ -422,7 +422,7 @@ static const STM32SerialHW ports[maxPorts] = {
         DMA1_Channel3, DMA1_Channel3_IRQn, STM32SerialDMAHW::Channel3, {3, 28} }*/ },
 };
 #elif defined(STM32L073xx)
-constexpr int maxPorts = 5;
+constexpr int maxPorts = 6;
 // Configuring only RX and TX pins for now
 // {GPIOA/B/C (0, 1, 2), PIN NR(In the relative table), AF Column NR}
 static const STM32SerialAltFunc::Span usart1AfSpans[]={{0,9,4},{0,10,4},{0,0,0}};
@@ -436,6 +436,7 @@ static const STM32SerialHW ports[maxPorts] = {
         DMA1_Channel5, DMA1_Channel4_5_6_7_IRQn, STM32SerialDMAHW::Channel5, 3 } },
     { USART2, USART2_IRQn, {usart2AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART2EN,
       { 0 } }, // No DMA support yet because of merged IRQ channels
+    { 0 },
     { USART4, USART4_5_IRQn, {usart4AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART4EN,
       { 0 } },
     { USART5, USART4_5_IRQn, {usart5AfSpans}, false, STM32Bus::APB1, RCC_APB1ENR_USART5EN,

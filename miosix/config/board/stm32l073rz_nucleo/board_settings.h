@@ -63,7 +63,7 @@ constexpr unsigned int hseFrequency=8000000;
 constexpr unsigned int cpuFrequency=32000000;
 
 /// Serial port
-/// Serial ports 1 to 3 are available
+/// Serial ports 1, 2 and 4 to 6 are available (port 6 is LPUART1)
 const unsigned int defaultSerial=2;
 const unsigned int defaultSerialSpeed=115200;
 const bool defaultSerialFlowctrl=false;
@@ -78,11 +78,6 @@ using defaultSerialTxPin = Gpio<PA,2>;
 using defaultSerialRxPin = Gpio<PA,3>;
 using defaultSerialRtsPin = Gpio<PA,1>;
 using defaultSerialCtsPin = Gpio<PA,0>;
-// Default serial 3 pins (uncomment when using serial 3/LPUART)
-//using defaultSerialTxPin = Gpio<PB,10>;
-//using defaultSerialRxPin = Gpio<PB,11>;
-//using defaultSerialRtsPin = Gpio<PB,14>;
-//using defaultSerialCtsPin = Gpio<PB,13>;
 
 /**
  * \}
