@@ -1,150 +1,81 @@
-# Welcome to the Miosix Kernel
+## Miosix Porting to STM32L073RZ-Nucleo
 
-Miosix (Minimal Operating System with POSIX) is a real-time operating system
-for 32-bit microcontrollers. It implements a new paradigm, the
-**fluid kernel** [1]: applications can be written to run in kernel space
-(*unikernel*-like), or in userspace with the same set of APIs.
+<div align="right">Luigi Biasi<br/>A.A. 2025/2026<br/>Embedded Systems Project</div>
 
-Miosix additionally features:
+#### Summary
+Port of Miosix kernel to the STM32L073RZ-Nucleo board with boot, scheduling and UART.
+#### Goals and scope
+- Goals: add portability for STM32L073RZ-Nucleo with correct memory management, system clock and serial ports support.
 
-- Focus on **C++** support, not just C
-- Support for **standard APIs**:
-  - C and C++ standard libraries (STL included)
-  - POSIX thread API
-  - C++ exception handling
-- **SMP Multicore** support
-- **Memory protection** for processes on microcontrollers with MPUs
-- Built-in **virtual filesystem** (VFS), integrated with the libc, supporting:
-  - FAT32 for external drives like SD cards
-  - LittleFs for non-volatile internal storage, like SPI Flash chips
-  - RomFs for read-only on-code-flash file storage
-- **Flexible scheduler subsystem** with the ability to choose between
-  - Priority scheduling
-  - Earliest Deadline First (EDF) scheduling
-  - Control-based scheduling [2]
-- **Scalable code size**, configurable by removing features you don't need
-  (~100KiB as a fluid kernel with userspace processes support and virtual filesystem, down to ~10KiB as a unikernel with all optional features removed)
+>[!Note]
+>I took as a reference to implement the porting the STM32L053r8 Nucleo, that was already supported by MIOSIX.
+#### Hardware overview
+- Board: STM32L073RZ-Nucleo
+- MCU: Arm® 32-bit Cortex®-M0+ with MPU, 192-Kbyte Flash memory with ECC, 20-Kbyte RAM
+- Key components: PLL for CPU clock, Pre-programmed bootloader
+#### Toolchain and host environment
+- Host OS: Linux Mint 22.3 Cinnamon (via VirtualBox v7.0.14)
+- Toolchain: MiosixToolchain 15.2.0mp4.2
+- Debug tools: gdb 15.1, QSTLink2
+#### Project Layout and low level initialization
+Files added/modified
+- `config/`
+	- `Makefile.inc` -> added as target board the `stm32l073rz_nucleo`
+- `config/board/stm32l073rz_nucleo`
+	- `board_settings.h` -> adjusted the stack size (set to $4K$, proportional wrt the reference board stack size), set the working frequency at $32MHz$ (maximum for this board), serial speed at $115200$
+	- `Makefile.inc`
+- `miosix-kernel/miosix/arch/board/stm32l073rz_nucleo`
+	- `unikernel.ld` -> set memory size: flash=$192k$, ram=$20k$
+	- `Makefile.inc` -> define the board name for querying as `DBOARD_STM32L073RZ_NUCLEO`
+	- `interfaces_impl/arch_registers_impl.h` -> define `STM32L073xx`
+	- `interfaces_impl/boot.cpp` -> set the `IRQSetupClockTree` with $32MHz$ CPU frequency and PLL clock source.
+		- Switch to voltage range $1$
+		- Set flash latency to $1$ wait state
+		- Set the correct PLL multiplier and divider
+		- Use PLL as system clock
+>[!Note]
+>Actually this boot script was the one requiring some troubleshooting effort, because I was working on the MIOSIX version linked in the old version of MIOSIX wiki.
+>In this new version of the repo the `boot.cpp` file is basically equal to the one of the reference board STM32L053r8 Nucleo (same clock frequency, same clock source, same latency, same voltage range).
+- `miosix-kernel/miosix/arch/drivers/serial/`
+	- `stm32f7_serial.cpp` -> added the support for the target board to the table of hardware configurations
+- `main.cpp` -> implemented the blinking led script to test the memory and clock functionalities
+#### Implemented peripherals (Serial ports)
+###### USART
+- Peripheral instance(s): USART1, USART2, USART4, USART5
+- DMA usage: yes for USART1, no for the others peripherals due to simplified channel allocation
+- Test: to be tested in the laboratory
 
-## Getting started
+**Pin mapping and AF settings**
+The AF spans are defined as objects containing `{GPIO A/B/C, Pin Number, AF Number}` for each pin to set.
 
-You can find information on how to configure and use the kernel
-at the following url: https://miosix.org
+| Port   | TX                 | RX                  | RTS | CTS | CK  |
+| ------ | ------------------ | ------------------- | --- | --- | --- |
+| USART1 | GPIO A, Pin 9, AF4 | GPIO A, Pin 10, AF4 | -   | -   | -   |
+| USART2 | GPIO A, Pin 2, AF4 | GPIO A, Pin 3, AF4  | -   | -   | -   |
+| USART4 | GPIO A, Pin 0, AF6 | GPIO A, Pin 1, AF6  | -   | -   | -   |
+| USART5 | GPIO B, Pin 3, AF6 | GPIO B, Pin 4, AF6  | -   | -   | -   |
+###### LPUART
+- Peripheral instance(s): LPUART1
+- DMA usage: yes
+- Test: to be tested in laboratory
 
-Miosix development goes on in the testing and unstable branches.
-The master branch points to the latest stable release.
+**Pin mapping and AF settings**
 
-## Directory structure
+| Port    | TX                  | RX                  | RTS                 | CTS                 | CK  |
+| ------- | ------------------- | ------------------- | ------------------- | ------------------- | --- |
+| LPUART1 | GPIO B, Pin 10, AF4 | GPIO B, Pin 11, AF4 | GPIO B, Pin 14, AF4 | GPIO B, Pin 14, AF4 | -   |
+#### Build and boot procedure
+- `make program` -> build and upload to the board. Blinking led script by default.
 
-Directories marked with `[x]` contain code or configuration files that are used
-to build the kernel while directories marked with `[ ]` contain other stuff
-(documentation, examples).
+#### Tests and results
+- Results table:
 
-```
-[x]                          //Root directory, contains the application code
- |
- +--[ ] doc                  //Kernel documentation (doxygen + pdf + txt)
- |
- +--[ ] examples             //Contains some example applications
- |
- +--[ ] templates            //Contains application templates
- |   |
- |   +--[ ] simple           //Template for kernel-mode applications
- |   |
- |   +--[ ] processes        //Template for kernel and user-mode applications
- |
- +--[ ] tools                //Miscellaneous tools for Miosix users
- |   |
- |   +--[ ] bootloaders      //Custom bootloaders for some boards
- |   |                       //Mostly used for running Miosix in RAM without a
- |   |                       //debugger
- |   |
- |   +--[ ] compiler         //Contains scripts used to build GCC with the
- |   |                       //patches required to compile the kernel
- |   |
- |   +--[ ] testsuite        //Contains the kernel testsuite
- |   .
- |   .
- |
- +--[x] miosix               //Contains all Miosix OS code
-     |
-     +--[x] cmake            //CMake files used by the Miosix CMake build system
-     |
-     +--[x] config           //Default template configuration makefile fragments
-     |   |                   //and header files
-     |   |
-     |   +--[x] board        //Board-specific configuration
-     |
-     +--[x] e20              //Contains the kernel's event driven API
-     |
-     +--[x] filesystem       //Filesystem code
-     |
-     +--[x] interfaces       //Contains interfaces between kernel and
-     |                       //architecture dependent code
-     |
-     +--[x] interfaces_private //Private interfaces for the kernel
-     |
-     +--[x] kercalls         //Implementation of libc primitives for kernel mode
-     |
-     +--[x] kernel           //Contains the architecture independent kernel part
-     |   |
-     |   +--[x] scheduler    //Contains the various schedulers
-     |       |
-     |       +--[x] priority
-     |       |
-     |       +--[x] control_based
-     |       |
-     |       +--[x] edf
-     |
-     +--[x] ldscripts        //Base linker script files
-     |                       //Boards include linker script fragments from here
-     |                       //to make full linker scripts
-     |
-     +--[x] tools            //Scripts used by the Miosix build system
-     |
-     +--[x] util             //Contains architecture independent utility code
-     |
-     +--[x] arch             //Contains architecture dependent code
-         |
-         +--[x] board        //Board-specific code and definitions
-         |   |
-         |   +--[x] lpc2138_miosix_board //Name of folder is the board name
-         |   |   |
-         |   |   +--[x] interfaces-impl  //Implmentation of miosix/interfaces
-         |   |   |
-         |   |   +--[x] Makefile.inc     //Build system configuration
-         |   |   |
-         |   |   +--[x] ...              //Linker scripts,
-         |   .                           //openocd scripts
-         |   .   Other boards
-         |
-         +--[x] chip         //Chip-family-specific code and definitions
-         |   |
-         |   +--[x] lpc2000  //Name of folder is the chip family name
-         |   |   |
-         |   |   +--[x] interfaces-impl  //Implmentation of miosix/interfaces
-         |   |   |
-         |   |   +--[x] Makefile.inc     //Build system configuration
-         |   .
-         |   .   Other chip families
-         |
-         +--[x] cpu          //CPU-architecture-specific code and definitions
-         |   |
-         |   +--[x] armv4    //Name of folder is the CPU architecture
-         |   |   |
-         |   |   +--[x] interfaces-impl  //Implmentation of miosix/interfaces
-         |   .
-         |   .   Other architectures
-         |
-         +--[x] drivers      //Collection of drivers
-         |
-         +--[x] CMSIS
-```
-
-## References
-
-[1] F. Terraneo and D. Cattaneo, "Fluid Kernels: Seamlessly Conquering the
-Embedded Computing Continuum," in IEEE Transactions on Computers, vol. 74,
-no. 12, Dec. 2025, doi: https://doi.org/10.1109/TC.2025.3605745.
-[2] M. Maggio, F. Terraneo, and A. Leva, "Task scheduling: A control-theoretical
-viewpoint for a general and flexible solution," in ACM Trans. Embed. Comput.
-Syst., vol. 13, no. 4, Nov. 2014, doi: https://doi.org/10.1145/2560015.
+| Test                    |              Description | Result | Notes |
+| :---------------------- | -----------------------: | -----: | :---- |
+| Kernel memory and clock |      Blinking led script |     OK | -     |
+| Serial ports            | To be done in laboratory |      - | -     |
+#### Performance and resource usage
+- Final binary size (`main.elf`): $1.3 MB$
+#### References
+- https://miosix.org/wiki/index.php?title=Main_Page
+- https://www.st.com/resource/en/datasheet/stm32l073v8.pdf
